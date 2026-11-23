@@ -23,14 +23,14 @@ The stack runs on one EC2 instance with Docker Compose, using images that CI pub
    (GitHub → your profile → Packages → `settlewatch`, `settlewatch-sre-bot`) and set visibility to *Public*.
    Otherwise, run `docker login ghcr.io` on the instance with a read-only token.
 5. **Repository secrets** (Settings → Secrets and variables → Actions):
-   `EC2_HOST`, `EC2_USER` (`ubuntu`), `EC2_SSH_KEY` (contents of the `.pem`). Optional: `JIRA_BASE_URL`,
+   `DEPLOY_HOST`, `DEPLOY_USER` (`ubuntu`), `DEPLOY_SSH_KEY` (contents of the `.pem`). Optional: `JIRA_BASE_URL`,
    `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`.
 6. Create an Environment named `production` (Settings → Environments). You can add yourself as a required
    reviewer to get a change-approval gate before each deploy, which is the ITIL change-management step.
 
 ## Deploy
 
-Actions → **Deploy to AWS EC2** → Run workflow → tag `latest` (or a commit SHA to roll back).
+Actions → **Deploy to server** → Run workflow → tag `latest` (or a commit SHA to roll back).
 
 Seed demo data once:
 

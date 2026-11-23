@@ -1,11 +1,12 @@
-name: Deploy to AWS EC2
+name: Deploy to server
 
-# Manual deploy of the images CI published to GHCR. Requires repository secrets:
-#   EC2_HOST      public DNS/IP of the instance
-#   EC2_USER      ssh user (ubuntu for Ubuntu AMIs, ec2-user for Amazon Linux)
-#   EC2_SSH_KEY   private key for that user (contents of the .pem file)
+# Manual deploy of the images CI published to GHCR onto any Linux VM with Docker
+# (Oracle Cloud Always Free, AWS EC2, ...). Requires repository secrets:
+#   DEPLOY_HOST      public IP or DNS name of the server
+#   DEPLOY_USER      ssh user (ubuntu on Ubuntu images)
+#   DEPLOY_SSH_KEY   private key for that user (full contents of the key file)
 # Optional (enables real Jira tickets): JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY
-# See docs/deploy-aws.md for the one-time instance setup.
+# See docs/deploy-oracle.md (recommended, free forever) or docs/deploy-aws.md.
 
 on:
   workflow_dispatch:
@@ -31,17 +32,17 @@ jobs:
 
       - name: Configure SSH
         env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       - name: Copy stack definition
         env:
-          TARGET: ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
         run: |
           ssh -i ~/.ssh/deploy_key "$TARGET" "mkdir -p ~/settlewatch"
           tar czf - docker-compose.yml docker-compose.prod.yml docker perf/seed_trades.sql tools/loadgen.py \
@@ -49,7 +50,7 @@ jobs:
 
       - name: Pull and restart
         env:
-          TARGET: ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
           IMAGE_TAG: ${{ inputs.tag }}
           IMAGE_REPO: ghcr.io/${{ github.repository }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -73,10 +74,10 @@ jobs:
 
       - name: Smoke test
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS "http://$EC2_HOST:8080/actuator/health" | grep -q UP; then echo "healthy"; exit 0; fi
+            if curl -fsS "http://$DEPLOY_HOST:8080/actuator/health" | grep -q UP; then echo "healthy"; exit 0; fi
             sleep 5
           done
           echo "Application did not become healthy" >&2

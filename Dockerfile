@@ -1,5 +1,6 @@
 # ---- build ----
-FROM maven:3.9-eclipse-temurin-21 AS build
+# The jar is platform-independent, so compile once on the native builder even for arm64 images
+FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /src
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline

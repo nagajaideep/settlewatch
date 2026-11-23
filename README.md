@@ -17,7 +17,7 @@ Python SRE bot. The bot turns an alert into a diagnosed, ITIL-prioritised Jira t
 | **Self-diagnosis** | Drop a production index and the bot's latency diagnosis names *that index* as the root cause and gives the fix command. |
 | **Incident automation** | Prometheus alert → Alertmanager → Python bot → Jira ticket with probable cause, evidence, sample trades, slow queries, log lines and runbook link. Repeat alerts are de-duplicated, and a resolved alert adds a comment to its ticket. |
 | **Fault injection** | Chaos endpoints rehearse three incident types (fail spike, API latency, DB pool exhaustion). The bot recognises drills and marks those tickets `[DRILL]`. |
-| **Delivery** | GitHub Actions: Java unit and Testcontainers tests, Python tests, promtool/amtool config validation, Docker images to GHCR, one-click deploy to AWS EC2. |
+| **Delivery** | GitHub Actions: Java unit and Testcontainers tests, Python tests, promtool/amtool config validation, multi-arch Docker images to GHCR, one-click SSH deploy (Oracle Cloud free tier or AWS). |
 
 ## Architecture
 
@@ -41,7 +41,7 @@ flowchart LR
     BOT -- pg_stat_statements,<br/>pg_stat_activity, trades --> PG
     BOT -- app logs --> App
     BOT --> JIRA[Jira Cloud<br/>or Markdown dry-run]
-    GH[GitHub Actions] -- images --> GHCR[(GHCR)] --> EC2[AWS EC2]
+    GH[GitHub Actions] -- images --> GHCR[(GHCR)] --> VM[Cloud VM<br/>Oracle Always Free / AWS]
 ```
 
 | Layer | Tech |
@@ -51,7 +51,7 @@ flowchart LR
 | Back end | PostgreSQL 16, Flyway migrations, partial and composite indexes, `FOR UPDATE SKIP LOCKED` |
 | Observability | Micrometer → Prometheus, Grafana (provisioned as code), Alertmanager |
 | SRE automation | Python 3.12, Flask, psycopg 3, Jira Cloud REST API v3 (Atlassian Document Format) |
-| DevOps | Docker multi-stage builds, Docker Compose, GitHub Actions, GHCR, AWS EC2 |
+| DevOps | Docker multi-stage multi-arch builds, Docker Compose, GitHub Actions, GHCR, Oracle Cloud / AWS |
 
 ## Quick start
 
@@ -179,9 +179,12 @@ and 17 Python tests (diagnosis rules, Jira client, dedupe and resolve flow).
 ## Deployment
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push and PR. On `main` it also
-publishes `ghcr.io/<owner>/settlewatch` and `settlewatch-sre-bot`. The **Deploy to AWS EC2** workflow is
-manual: it pulls a chosen image tag onto a free-tier instance and smoke-tests `/actuator/health`. Setup is in
-[docs/deploy-aws.md](docs/deploy-aws.md).
+publishes multi-arch (amd64 + arm64) images `ghcr.io/<owner>/settlewatch` and `settlewatch-sre-bot`.
+The **Deploy to server** workflow is manual: it pulls a chosen image tag onto a VM over SSH and
+smoke-tests `/actuator/health`. Rolling back means redeploying an older commit SHA.
+
+- **Free forever:** Oracle Cloud Always Free ARM VM, see [docs/deploy-oracle.md](docs/deploy-oracle.md)
+- AWS EC2: [docs/deploy-aws.md](docs/deploy-aws.md)
 
 ## Repository layout
 
