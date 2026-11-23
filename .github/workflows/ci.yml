@@ -120,3 +120,13 @@ jobs:
             ${{ steps.names.outputs.bot }}:${{ github.sha }}
           cache-from: type=gha,scope=bot
           cache-to: type=gha,mode=max,scope=bot
+      - name: Trigger Render redeploy (if configured)
+        if: env.PUSH == 'true'
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null && echo "Render deploy triggered"
+          else
+            echo "RENDER_DEPLOY_HOOK_URL not set; skipping"
+          fi

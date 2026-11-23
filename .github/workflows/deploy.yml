@@ -76,7 +76,7 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             if curl -fsS "http://$DEPLOY_HOST:8080/actuator/health" | grep -q UP; then echo "healthy"; exit 0; fi
             sleep 5
           done

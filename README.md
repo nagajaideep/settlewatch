@@ -17,7 +17,7 @@ Python SRE bot. The bot turns an alert into a diagnosed, ITIL-prioritised Jira t
 | **Self-diagnosis** | Drop a production index and the bot's latency diagnosis names *that index* as the root cause and gives the fix command. |
 | **Incident automation** | Prometheus alert → Alertmanager → Python bot → Jira ticket with probable cause, evidence, sample trades, slow queries, log lines and runbook link. Repeat alerts are de-duplicated, and a resolved alert adds a comment to its ticket. |
 | **Fault injection** | Chaos endpoints rehearse three incident types (fail spike, API latency, DB pool exhaustion). The bot recognises drills and marks those tickets `[DRILL]`. |
-| **Delivery** | GitHub Actions: Java unit and Testcontainers tests, Python tests, promtool/amtool config validation, multi-arch Docker images to GHCR, one-click SSH deploy (Oracle Cloud free tier or AWS). |
+| **Delivery** | GitHub Actions: Java unit and Testcontainers tests, Python tests, promtool/amtool config validation, multi-arch Docker images to GHCR, auto-deploy to Render (free) or one-click SSH deploy to a VM. |
 
 ## Architecture
 
@@ -183,7 +183,9 @@ publishes multi-arch (amd64 + arm64) images `ghcr.io/<owner>/settlewatch` and `s
 The **Deploy to server** workflow is manual: it pulls a chosen image tag onto a VM over SSH and
 smoke-tests `/actuator/health`. Rolling back means redeploying an older commit SHA.
 
-- **Free forever:** Oracle Cloud Always Free ARM VM, see [docs/deploy-oracle.md](docs/deploy-oracle.md)
+- **Free, no credit card:** app on Render + Postgres on Neon, see [docs/deploy-free.md](docs/deploy-free.md).
+  Pushes to `main` redeploy automatically.
+- **Full stack on a VM** (Prometheus, Grafana, SRE bot): Oracle Cloud Always Free, see [docs/deploy-oracle.md](docs/deploy-oracle.md)
 - AWS EC2: [docs/deploy-aws.md](docs/deploy-aws.md)
 
 ## Repository layout

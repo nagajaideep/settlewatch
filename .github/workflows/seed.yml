@@ -1,0 +1,40 @@
+name: Seed database
+
+# Loads mock trades into a hosted Postgres (e.g. Neon) without installing anything locally.
+# Requires the repository secret SEED_DATABASE_URL, a libpq URL such as
+#   postgresql://user:password@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require
+# Start the app once before running this, so Flyway has created the trades table.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rows:
+        description: Number of trades to generate
+        default: "500000"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Wait for the trades table
+        env:
+          DATABASE_URL: ${{ secrets.SEED_DATABASE_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            if psql "$DATABASE_URL" -Atc "select 1 from information_schema.tables where table_name = 'trades'" | grep -q 1; then
+              exit 0
+            fi
+            echo "trades table not found yet; start the app first (attempt $i)"; sleep 10
+          done
+          exit 1
+      - name: Seed
+        env:
+          DATABASE_URL: ${{ secrets.SEED_DATABASE_URL }}
+        run: psql "$DATABASE_URL" -v rows=${{ inputs.rows }} -f perf/seed_trades.sql
