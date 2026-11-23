@@ -1,0 +1,123 @@
+# Full local stack: app + Postgres + Prometheus + Alertmanager + Grafana + SRE bot (+ optional load generator)
+#   docker compose up -d --build
+#   docker compose --profile seed run --rm seed        # load 1M mock trades
+#   docker compose --profile load up -d loadgen        # steady trade flow for the dashboards
+name: settlewatch
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c log_min_duration_statement=500
+    environment:
+      POSTGRES_DB: settlewatch
+      POSTGRES_USER: settlewatch
+      POSTGRES_PASSWORD: settlewatch
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U settlewatch"]
+      interval: 5s
+      retries: 20
+
+  app:
+    build: .
+    image: settlewatch:local
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/settlewatch
+      DB_USER: settlewatch
+      DB_PASSWORD: settlewatch
+    ports: ["8080:8080"]
+    volumes:
+      - applogs:/app/logs
+
+  seed:
+    image: postgres:16-alpine
+    profiles: ["seed"]
+    depends_on:
+      app: { condition: service_started }
+    environment:
+      PGHOST: postgres
+      PGUSER: settlewatch
+      PGPASSWORD: settlewatch
+      PGDATABASE: settlewatch
+    volumes:
+      - ./perf:/perf:ro
+    # waits for Flyway to create the table, then loads the data
+    entrypoint: ["sh", "-c", "until psql -Atc 'select 1 from trades limit 1' >/dev/null 2>&1; do sleep 2; done; psql -v rows=${SEED_ROWS:-1000000} -f /perf/seed_trades.sql"]
+
+  loadgen:
+    image: python:3.12-slim
+    profiles: ["load"]
+    depends_on: [app]
+    environment:
+      BASE_URL: http://app:8080
+      RATE: ${LOAD_RATE:-5}
+    volumes:
+      - ./tools/loadgen.py:/loadgen.py:ro
+    command: ["python", "-u", "/loadgen.py"]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    volumes:
+      - ./docker/prometheus:/etc/prometheus:ro
+    ports: ["9090:9090"]
+    depends_on: [app]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./docker/alertmanager:/etc/alertmanager:ro
+    ports: ["9093:9093"]
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/settlewatch.json
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+
+  sre-bot:
+    build: ./sre-bot
+    image: settlewatch-sre-bot:local
+    depends_on: [app, prometheus]
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      APP_URL: http://app:8080
+      DATABASE_URL: postgresql://settlewatch:settlewatch@postgres:5432/settlewatch
+      APP_LOG_FILE: /app/logs/settlewatch.log
+      GRAFANA_URL: http://localhost:3000
+      # Leave JIRA_* unset for dry-run mode: tickets are written to /data/tickets, browse http://localhost:8000/tickets
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      JIRA_PROJECT_KEY: ${JIRA_PROJECT_KEY:-OPS}
+      JIRA_ISSUE_TYPE: ${JIRA_ISSUE_TYPE:-Task}
+    volumes:
+      - applogs:/app/logs:ro
+      - tickets:/data/tickets
+    ports: ["8000:8000"]
+
+volumes:
+  pgdata:
+  applogs:
+  tickets:

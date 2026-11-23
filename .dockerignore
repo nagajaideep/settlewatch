@@ -1,0 +1,7 @@
+target/
+logs/
+.git/
+sre-bot/
+perf/results/
+docs/
+*.md

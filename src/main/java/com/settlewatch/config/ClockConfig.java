@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.util.Random;
 import java.util.random.RandomGenerator;
 
 @Configuration
@@ -16,6 +17,6 @@ public class ClockConfig {
 
     @Bean
     RandomGenerator settlementRandom() {
-        return RandomGenerator.getDefault();
+        return new Random(); // thread-safe; the default L32X64MixRandom needs jdk.random, absent from slim JREs
     }
 }

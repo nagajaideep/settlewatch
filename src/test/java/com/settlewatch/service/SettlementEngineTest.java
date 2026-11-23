@@ -45,7 +45,7 @@ class SettlementEngineTest {
         List<Trade> due = List.of(trade("A"), trade("B"));
         when(repo.lockDueForSettlement(LocalDate.of(2026, 11, 23), 500)).thenReturn(due);
 
-        var engine = new SettlementEngine(repo, props, chaos, metrics, clock, RandomGenerator.getDefault());
+        var engine = new SettlementEngine(repo, props, chaos, metrics, clock, new java.util.Random(42));
         var result = engine.sweep();
 
         assertThat(result.settled()).isEqualTo(2);
@@ -60,7 +60,7 @@ class SettlementEngineTest {
         when(repo.lockDueForSettlement(any(), anyInt())).thenReturn(due);
         chaos.setFailureRateOverride(1.0);
 
-        var engine = new SettlementEngine(repo, props, chaos, metrics, clock, RandomGenerator.getDefault());
+        var engine = new SettlementEngine(repo, props, chaos, metrics, clock, new java.util.Random(42));
         var result = engine.sweep();
 
         assertThat(result.failed()).isEqualTo(3);
@@ -75,7 +75,7 @@ class SettlementEngineTest {
         when(repo.lockDueForSettlement(any(), anyInt())).thenReturn(List.of());
         when(repo.countDueForSettlement(any())).thenReturn(1234L);
 
-        new SettlementEngine(repo, props, chaos, metrics, clock, RandomGenerator.getDefault()).sweep();
+        new SettlementEngine(repo, props, chaos, metrics, clock, new java.util.Random(42)).sweep();
 
         assertThat(registry.get("settlewatch.settlement.due.backlog").gauge().value()).isEqualTo(1234);
         verify(repo).flush();

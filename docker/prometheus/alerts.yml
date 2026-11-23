@@ -1,0 +1,78 @@
+groups:
+  - name: settlewatch
+    rules:
+      - alert: SettlementFailureSpike
+        expr: |
+          (
+            sum(increase(settlewatch_settlements_total{outcome="failed"}[10m]))
+              / clamp_min(sum(increase(settlewatch_settlements_total[10m])), 1)
+          ) > 0.10
+          and sum(increase(settlewatch_settlements_total[10m])) > 20
+        for: 2m
+        labels:
+          severity: critical
+          service: settlement-engine
+        annotations:
+          summary: "Settlement fail rate above 10% over the last 10 minutes"
+          description: "{{ $value | humanizePercentage }} of settlement attempts failed in the last 10m (baseline ~3%)."
+          runbook: docs/runbooks.md#settlementfailurespike
+
+      - alert: HighApiLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{uri=~"/api/.*", uri!~"/api/admin.*"}[5m]))
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: trade-api
+        annotations:
+          summary: "Trade API p95 latency above 500ms"
+          description: "p95 latency is {{ $value | humanizeDuration }} over the last 5 minutes."
+          runbook: docs/runbooks.md#highapilatency
+
+      - alert: DbConnectionPoolSaturated
+        expr: |
+          max(hikaricp_connections_active / hikaricp_connections_max) > 0.8
+          or max(hikaricp_connections_pending) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection pool is nearly exhausted"
+          description: "Active/max connections ratio or pending threads indicate pool saturation."
+          runbook: docs/runbooks.md#dbconnectionpoolsaturated
+
+      - alert: SettlementBacklogGrowing
+        expr: settlewatch_settlement_due_backlog > 5000
+        for: 10m
+        labels:
+          severity: warning
+          service: settlement-engine
+        annotations:
+          summary: "More than 5000 due trades are waiting to settle"
+          description: "Backlog is {{ $value }} trades; the settlement engine is not keeping up."
+          runbook: docs/runbooks.md#settlementbackloggrowing
+
+      - alert: ApiErrorRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{uri=~"/api/.*", status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_server_requests_seconds_count{uri=~"/api/.*"}[5m])), 0.001) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: trade-api
+        annotations:
+          summary: "More than 5% of API requests are failing with 5xx"
+          runbook: docs/runbooks.md#apierrorratehigh
+
+      - alert: SettleWatchDown
+        expr: up{job="settlewatch"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: trade-api
+        annotations:
+          summary: "SettleWatch application is not responding to scrapes"
+          runbook: docs/runbooks.md#settlewatchdown

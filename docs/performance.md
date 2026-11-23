@@ -81,3 +81,11 @@ and ops investigations.
   index paths read only 50–430 pages, so the gap would be larger, not smaller.
 - `pg_stat_statements` is enabled in `docker-compose.yml`, so the SRE bot can report the slowest
   queries when a latency alert fires.
+
+## Found later by the SRE bot
+
+During a game day, the latency diagnosis's `pg_stat_statements` table showed the dashboard summary query
+`SELECT status, COUNT(*) FROM trades GROUP BY status` averaging **74 ms**. It is a full scan, because it
+counts every row. It is not on a client-facing path, but at 10M rows it would be. Options, cheapest first:
+cache the summary for a few seconds, keep running counters in a small `trade_status_counts` table updated
+in the same transaction, or use a materialized view refreshed by the settlement sweep.

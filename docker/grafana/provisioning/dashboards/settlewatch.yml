@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: settlewatch
+    folder: SettleWatch
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

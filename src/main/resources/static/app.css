@@ -17,7 +17,8 @@ h2 { font-size: 16px; margin: 28px 0 10px; }
 .tile .label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .tile .value { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .tile.warn .value { color: var(--err); }
-.grid { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); display: block; overflow-x: auto; }
+.grid { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); }
+@media (max-width: 900px) { .grid { display: block; overflow-x: auto; } }
 .grid.narrow { max-width: 520px; display: table; }
 .grid th, .grid td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .grid th { background: #eef1f5; font-weight: 600; font-size: 12px; color: var(--muted); }
