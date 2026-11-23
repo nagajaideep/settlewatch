@@ -1,0 +1,17 @@
+-- Q3 failed settlements in last 24h by reason
+SELECT failure_reason, count(*)
+FROM trades
+WHERE status = 'FAILED' AND updated_at >= now() - interval '24 hours'
+GROUP BY failure_reason;
+
+HashAggregate  (cost=2182.46..2182.51 rows=5 width=26) (actual time=0.144..0.145 rows=5 loops=1)
+  Group Key: failure_reason
+  Batches: 1  Memory Usage: 24kB
+  Buffers: shared hit=65
+  ->  Index Scan using idx_trades_status_updated_at on trades  (cost=0.43..2177.65 rows=962 width=18) (actual time=0.016..0.123 rows=62 loops=1)
+        Index Cond: (((status)::text = 'FAILED'::text) AND (updated_at >= (now() - '24:00:00'::interval)))
+        Buffers: shared hit=65
+Planning:
+  Buffers: shared hit=209
+Planning Time: 0.445 ms
+Execution Time: 0.193 ms

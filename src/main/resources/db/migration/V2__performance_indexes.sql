@@ -14,10 +14,10 @@ CREATE INDEX IF NOT EXISTS idx_trades_pending_settle_date
 CREATE INDEX IF NOT EXISTS idx_trades_status_updated_at
     ON trades (status, updated_at DESC);
 
--- Q4: client positions - covering index lets Postgres answer from the index alone
-CREATE INDEX IF NOT EXISTS idx_trades_positions_covering
-    ON trades (client_id, isin) INCLUDE (side, quantity)
-    WHERE status = 'SETTLED';
+-- Q4: client positions reuse idx_trades_client_status_date (client_id, status prefix).
+-- A covering index (client_id, isin) INCLUDE (side, quantity) WHERE status = 'SETTLED' was
+-- benchmarked: the planner still preferred the composite index (~200 rows per client), so the
+-- extra 44 MB and its write cost were not worth it. See docs/performance.md.
 
 -- Q5: security-level lookups (corporate actions, ops queries by ISIN)
 CREATE INDEX IF NOT EXISTS idx_trades_isin_trade_date

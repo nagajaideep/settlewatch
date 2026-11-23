@@ -1,0 +1,35 @@
+-- Q4 client net positions
+SELECT client_id, isin,
+       SUM(CASE WHEN side = 'BUY' THEN quantity ELSE -quantity END) AS quantity,
+       COUNT(*) AS trade_count
+FROM trades
+WHERE client_id = 'CL01234' AND status = 'SETTLED'
+GROUP BY client_id, isin
+HAVING SUM(CASE WHEN side = 'BUY' THEN quantity ELSE -quantity END) <> 0
+ORDER BY isin;
+
+Finalize GroupAggregate  (cost=27659.48..27683.86 rows=177 width=61) (actual time=48.163..51.713 rows=167 loops=1)
+  Group Key: isin
+  Filter: (sum(CASE WHEN ((side)::text = 'BUY'::text) THEN quantity ELSE (- quantity) END) <> '0'::numeric)
+  Buffers: shared hit=11605 read=8874
+  ->  Gather Merge  (cost=27659.48..27679.63 rows=156 width=61) (actual time=48.150..51.549 rows=172 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=11605 read=8874
+        ->  Partial GroupAggregate  (cost=26659.45..26661.60 rows=78 width=61) (actual time=45.710..45.750 rows=57 loops=3)
+              Group Key: isin
+              Buffers: shared hit=11605 read=8874
+              ->  Sort  (cost=26659.45..26659.65 rows=78 width=30) (actual time=45.691..45.695 rows=58 loops=3)
+                    Sort Key: isin
+                    Sort Method: quicksort  Memory: 27kB
+                    Buffers: shared hit=11605 read=8874
+                    Worker 0:  Sort Method: quicksort  Memory: 29kB
+                    Worker 1:  Sort Method: quicksort  Memory: 27kB
+                    ->  Parallel Seq Scan on trades  (cost=0.00..26657.00 rows=78 width=30) (actual time=0.433..45.593 rows=58 loops=3)
+                          Filter: (((client_id)::text = 'CL01234'::text) AND ((status)::text = 'SETTLED'::text))
+                          Rows Removed by Filter: 333275
+                          Buffers: shared hit=11533 read=8874
+Planning:
+  Buffers: shared hit=140
+Planning Time: 0.564 ms
+Execution Time: 51.819 ms

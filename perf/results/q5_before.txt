@@ -1,0 +1,26 @@
+-- Q5 trades in one security (ops / corporate actions)
+SELECT * FROM trades
+WHERE isin = 'US0000010422'
+ORDER BY trade_date DESC
+LIMIT 100;
+
+Limit  (cost=26623.27..26634.94 rows=100 width=140) (actual time=34.020..38.196 rows=100 loops=1)
+  Buffers: shared hit=12279 read=8202
+  ->  Gather Merge  (cost=26623.27..26671.57 rows=414 width=140) (actual time=34.017..38.182 rows=100 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=12279 read=8202
+        ->  Sort  (cost=25623.24..25623.76 rows=207 width=140) (actual time=32.208..32.218 rows=76 loops=3)
+              Sort Key: trade_date DESC
+              Sort Method: quicksort  Memory: 58kB
+              Buffers: shared hit=12279 read=8202
+              Worker 0:  Sort Method: top-N heapsort  Memory: 68kB
+              Worker 1:  Sort Method: quicksort  Memory: 72kB
+              ->  Parallel Seq Scan on trades  (cost=0.00..25615.33 rows=207 width=140) (actual time=0.194..32.064 rows=173 loops=3)
+                    Filter: (isin = 'US0000010422'::bpchar)
+                    Rows Removed by Filter: 333160
+                    Buffers: shared hit=12205 read=8202
+Planning:
+  Buffers: shared hit=155
+Planning Time: 0.483 ms
+Execution Time: 38.281 ms

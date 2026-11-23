@@ -1,0 +1,26 @@
+-- Q2 settlement engine pickup (due PENDING trades)
+SELECT * FROM trades
+WHERE status = 'PENDING' AND settlement_date <= current_date
+ORDER BY settlement_date
+LIMIT 500;
+
+Limit  (cost=29117.15..29175.49 rows=500 width=140) (actual time=45.236..49.531 rows=500 loops=1)
+  Buffers: shared hit=10263 read=10218
+  ->  Gather Merge  (cost=29117.15..31076.82 rows=16796 width=140) (actual time=45.234..49.495 rows=500 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=10263 read=10218
+        ->  Sort  (cost=28117.13..28138.12 rows=8398 width=140) (actual time=43.394..43.427 rows=454 loops=3)
+              Sort Key: settlement_date
+              Sort Method: top-N heapsort  Memory: 153kB
+              Buffers: shared hit=10263 read=10218
+              Worker 0:  Sort Method: top-N heapsort  Memory: 153kB
+              Worker 1:  Sort Method: top-N heapsort  Memory: 153kB
+              ->  Parallel Seq Scan on trades  (cost=0.00..27698.67 rows=8398 width=140) (actual time=0.043..42.860 rows=2260 loops=3)
+                    Filter: (((status)::text = 'PENDING'::text) AND (settlement_date <= CURRENT_DATE))
+                    Rows Removed by Filter: 331073
+                    Buffers: shared hit=10189 read=10218
+Planning:
+  Buffers: shared hit=152
+Planning Time: 0.413 ms
+Execution Time: 49.628 ms

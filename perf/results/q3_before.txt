@@ -1,0 +1,30 @@
+-- Q3 failed settlements in last 24h by reason
+SELECT failure_reason, count(*)
+FROM trades
+WHERE status = 'FAILED' AND updated_at >= now() - interval '24 hours'
+GROUP BY failure_reason;
+
+Finalize GroupAggregate  (cost=29756.59..29760.74 rows=5 width=26) (actual time=54.242..57.883 rows=5 loops=1)
+  Group Key: failure_reason
+  Buffers: shared hit=10935 read=9546
+  ->  Gather Merge  (cost=29756.59..29760.64 rows=10 width=26) (actual time=54.231..57.872 rows=15 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=10935 read=9546
+        ->  Partial GroupAggregate  (cost=28756.57..28759.46 rows=5 width=26) (actual time=51.684..51.689 rows=5 loops=3)
+              Group Key: failure_reason
+              Buffers: shared hit=10935 read=9546
+              ->  Sort  (cost=28756.57..28757.51 rows=379 width=18) (actual time=51.674..51.676 rows=21 loops=3)
+                    Sort Key: failure_reason
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=10935 read=9546
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Seq Scan on trades  (cost=0.00..28740.33 rows=379 width=18) (actual time=3.605..51.589 rows=21 loops=3)
+                          Filter: (((status)::text = 'FAILED'::text) AND (updated_at >= (now() - '24:00:00'::interval)))
+                          Rows Removed by Filter: 333313
+                          Buffers: shared hit=10861 read=9546
+Planning:
+  Buffers: shared hit=112
+Planning Time: 0.587 ms
+Execution Time: 57.971 ms

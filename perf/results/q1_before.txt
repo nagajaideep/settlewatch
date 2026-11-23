@@ -1,0 +1,26 @@
+-- Q1 client blotter (client + status, newest first)
+SELECT * FROM trades
+WHERE client_id = 'CL01234' AND status = 'SETTLED'
+ORDER BY trade_date DESC
+LIMIT 50;
+
+Limit  (cost=27659.48..27665.31 rows=50 width=140) (actual time=37.485..40.868 rows=50 loops=1)
+  Buffers: shared hit=9591 read=10890
+  ->  Gather Merge  (cost=27659.48..27677.68 rows=156 width=140) (actual time=37.483..40.862 rows=50 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=9591 read=10890
+        ->  Sort  (cost=26659.45..26659.65 rows=78 width=140) (actual time=35.724..35.727 rows=40 loops=3)
+              Sort Key: trade_date DESC
+              Sort Method: quicksort  Memory: 42kB
+              Buffers: shared hit=9591 read=10890
+              Worker 0:  Sort Method: quicksort  Memory: 38kB
+              Worker 1:  Sort Method: quicksort  Memory: 38kB
+              ->  Parallel Seq Scan on trades  (cost=0.00..26657.00 rows=78 width=140) (actual time=0.551..35.656 rows=58 loops=3)
+                    Filter: (((client_id)::text = 'CL01234'::text) AND ((status)::text = 'SETTLED'::text))
+                    Rows Removed by Filter: 333275
+                    Buffers: shared hit=9517 read=10890
+Planning:
+  Buffers: shared hit=149
+Planning Time: 0.382 ms
+Execution Time: 40.916 ms

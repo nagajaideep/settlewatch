@@ -1,0 +1,30 @@
+-- Q4 client net positions
+SELECT client_id, isin,
+       SUM(CASE WHEN side = 'BUY' THEN quantity ELSE -quantity END) AS quantity,
+       COUNT(*) AS trade_count
+FROM trades
+WHERE client_id = 'CL01234' AND status = 'SETTLED'
+GROUP BY client_id, isin
+HAVING SUM(CASE WHEN side = 'BUY' THEN quantity ELSE -quantity END) <> 0
+ORDER BY isin;
+
+Sort  (cost=711.45..711.90 rows=177 width=61) (actual time=0.642..0.648 rows=167 loops=1)
+  Sort Key: isin
+  Sort Method: quicksort  Memory: 35kB
+  Buffers: shared hit=181
+  ->  HashAggregate  (cost=702.17..704.84 rows=177 width=61) (actual time=0.535..0.565 rows=167 loops=1)
+        Group Key: isin
+        Filter: (sum(CASE WHEN ((side)::text = 'BUY'::text) THEN quantity ELSE (- quantity) END) <> '0'::numeric)
+        Batches: 1  Memory Usage: 160kB
+        Buffers: shared hit=178
+        ->  Bitmap Heap Scan on trades  (cost=6.33..699.85 rows=186 width=30) (actual time=0.053..0.437 rows=174 loops=1)
+              Recheck Cond: (((client_id)::text = 'CL01234'::text) AND ((status)::text = 'SETTLED'::text))
+              Heap Blocks: exact=174
+              Buffers: shared hit=178
+              ->  Bitmap Index Scan on idx_trades_client_status_date  (cost=0.00..6.29 rows=186 width=0) (actual time=0.032..0.033 rows=174 loops=1)
+                    Index Cond: (((client_id)::text = 'CL01234'::text) AND ((status)::text = 'SETTLED'::text))
+                    Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=234
+Planning Time: 0.536 ms
+Execution Time: 0.720 ms

@@ -1,0 +1,15 @@
+-- Q5 trades in one security (ops / corporate actions)
+SELECT * FROM trades
+WHERE isin = 'US0000010422'
+ORDER BY trade_date DESC
+LIMIT 100;
+
+Limit  (cost=0.42..400.54 rows=100 width=140) (actual time=0.020..0.257 rows=100 loops=1)
+  Buffers: shared hit=104
+  ->  Index Scan using idx_trades_isin_trade_date on trades  (cost=0.42..1989.01 rows=497 width=140) (actual time=0.019..0.247 rows=100 loops=1)
+        Index Cond: (isin = 'US0000010422'::bpchar)
+        Buffers: shared hit=104
+Planning:
+  Buffers: shared hit=240
+Planning Time: 0.520 ms
+Execution Time: 0.299 ms

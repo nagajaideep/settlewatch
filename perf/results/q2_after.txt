@@ -1,0 +1,15 @@
+-- Q2 settlement engine pickup (due PENDING trades)
+SELECT * FROM trades
+WHERE status = 'PENDING' AND settlement_date <= current_date
+ORDER BY settlement_date
+LIMIT 500;
+
+Limit  (cost=0.29..1341.87 rows=500 width=140) (actual time=0.026..0.802 rows=500 loops=1)
+  Buffers: shared hit=427
+  ->  Index Scan using idx_trades_pending_settle_date on trades  (cost=0.29..55066.86 rows=20523 width=140) (actual time=0.025..0.757 rows=500 loops=1)
+        Index Cond: (settlement_date <= CURRENT_DATE)
+        Buffers: shared hit=427
+Planning:
+  Buffers: shared hit=249
+Planning Time: 0.639 ms
+Execution Time: 0.852 ms

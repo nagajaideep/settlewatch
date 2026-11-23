@@ -1,0 +1,15 @@
+-- Q1 client blotter (client + status, newest first)
+SELECT * FROM trades
+WHERE client_id = 'CL01234' AND status = 'SETTLED'
+ORDER BY trade_date DESC
+LIMIT 50;
+
+Limit  (cost=0.42..202.50 rows=50 width=140) (actual time=0.032..0.196 rows=50 loops=1)
+  Buffers: shared hit=53
+  ->  Index Scan using idx_trades_client_status_date on trades  (cost=0.42..752.14 rows=186 width=140) (actual time=0.031..0.190 rows=50 loops=1)
+        Index Cond: (((client_id)::text = 'CL01234'::text) AND ((status)::text = 'SETTLED'::text))
+        Buffers: shared hit=53
+Planning:
+  Buffers: shared hit=246
+Planning Time: 0.707 ms
+Execution Time: 0.219 ms

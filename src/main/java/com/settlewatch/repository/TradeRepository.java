@@ -46,7 +46,7 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
             nativeQuery = true)
     long countDueForSettlement(@Param("asOf") LocalDate asOf);
 
-    /** Q4 - net settled positions. Served by the covering index idx_trades_positions_covering. */
+    /** Q4 - net settled positions. Served by idx_trades_client_status_date. */
     @Query(value = """
             SELECT client_id                                                        AS clientId,
                    isin                                                             AS isin,
