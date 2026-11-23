@@ -1,0 +1,83 @@
+name: Deploy to AWS EC2
+
+# Manual deploy of the images CI published to GHCR. Requires repository secrets:
+#   EC2_HOST      public DNS/IP of the instance
+#   EC2_USER      ssh user (ubuntu for Ubuntu AMIs, ec2-user for Amazon Linux)
+#   EC2_SSH_KEY   private key for that user (contents of the .pem file)
+# Optional (enables real Jira tickets): JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY
+# See docs/deploy-aws.md for the one-time instance setup.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to deploy (commit SHA or "latest")
+        default: latest
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Copy stack definition
+        env:
+          TARGET: ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$TARGET" "mkdir -p ~/settlewatch"
+          tar czf - docker-compose.yml docker-compose.prod.yml docker perf/seed_trades.sql tools/loadgen.py \
+            | ssh -i ~/.ssh/deploy_key "$TARGET" "tar xzf - -C ~/settlewatch"
+
+      - name: Pull and restart
+        env:
+          TARGET: ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}
+          IMAGE_TAG: ${{ inputs.tag }}
+          IMAGE_REPO: ghcr.io/${{ github.repository }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: |
+          repo=$(echo "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "IMAGE_REPO=$repo"
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            echo "JIRA_BASE_URL=$JIRA_BASE_URL"
+            echo "JIRA_EMAIL=$JIRA_EMAIL"
+            echo "JIRA_API_TOKEN=$JIRA_API_TOKEN"
+            echo "JIRA_PROJECT_KEY=${JIRA_PROJECT_KEY:-OPS}"
+          } | ssh -i ~/.ssh/deploy_key "$TARGET" "umask 077 && cat > ~/settlewatch/.env"
+          ssh -i ~/.ssh/deploy_key "$TARGET" "cd ~/settlewatch && \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull && \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans && \
+            docker image prune -f"
+
+      - name: Smoke test
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "http://$EC2_HOST:8080/actuator/health" | grep -q UP; then echo "healthy"; exit 0; fi
+            sleep 5
+          done
+          echo "Application did not become healthy" >&2
+          exit 1
