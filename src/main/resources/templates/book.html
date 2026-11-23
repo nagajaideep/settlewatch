@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Book trade')}"></head>
+<body>
+<div th:replace="~{fragments :: nav}"></div>
+<main>
+    <h1>Book a trade</h1>
+    <form method="post" th:action="@{/book}" class="form">
+        <label>Client ID <input name="clientId" required maxlength="16" value="CL00042"></label>
+        <label>ISIN <input name="isin" required pattern="[A-Za-z]{2}[A-Za-z0-9]{9}[0-9]" value="US0378331005"></label>
+        <label>Side
+            <select name="side">
+                <option th:each="s : ${sides}" th:value="${s}" th:text="${s}"></option>
+            </select>
+        </label>
+        <label>Quantity <input name="quantity" type="number" min="0.01" step="0.01" required value="100"></label>
+        <label>Price <input name="price" type="number" min="0.000001" step="0.000001" required value="189.50"></label>
+        <label>Currency <input name="currency" required pattern="[A-Za-z]{3}" value="USD"></label>
+        <label>Counterparty <input name="counterparty" required maxlength="64" value="BROKER-GS"></label>
+        <button type="submit">Book trade</button>
+    </form>
+    <p class="hint">Settlement date defaults to T+1 business day. The settlement engine picks the trade up
+        once that date arrives.</p>
+</main>
+</body>
+</html>

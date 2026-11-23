@@ -1,0 +1,12 @@
+target/
+logs/
+*.log
+.idea/
+*.iml
+.vscode/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+sre-bot/tickets/
+.env

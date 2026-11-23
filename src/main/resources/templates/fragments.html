@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · SettleWatch'">SettleWatch</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<header th:fragment="nav">
+    <nav class="nav">
+        <a class="brand" th:href="@{/}">SettleWatch</a>
+        <a th:href="@{/}">Dashboard</a>
+        <a th:href="@{/clients}">Client positions</a>
+        <a th:href="@{/book}">Book trade</a>
+        <a href="/actuator/prometheus" target="_blank">Metrics</a>
+    </nav>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+</header>
+<table th:fragment="trades(rows)" class="grid">
+    <thead>
+    <tr><th>Ref</th><th>Client</th><th>ISIN</th><th>Side</th><th class="num">Qty</th><th class="num">Price</th>
+        <th>Settle date</th><th>Status</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="t : ${rows}">
+        <td th:text="${t.tradeRef}"></td>
+        <td><a th:href="@{/clients(clientId=${t.clientId})}" th:text="${t.clientId}"></a></td>
+        <td th:text="${t.isin}"></td>
+        <td th:text="${t.side}"></td>
+        <td class="num" th:text="${#numbers.formatDecimal(t.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
+        <td class="num" th:text="${#numbers.formatDecimal(t.price, 1, 'COMMA', 2, 'POINT')}"></td>
+        <td th:text="${t.settlementDate}"></td>
+        <td><span th:class="'badge ' + ${#strings.toLowerCase(t.status)}" th:text="${t.status}"></span></td>
+        <td th:text="${t.failureReason}"></td>
+    </tr>
+    <tr th:if="${#lists.isEmpty(rows)}"><td colspan="9" class="empty">Nothing here</td></tr>
+    </tbody>
+</table>
+</body>
+</html>

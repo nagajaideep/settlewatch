@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Client positions')}"></head>
+<body>
+<div th:replace="~{fragments :: nav}"></div>
+<main>
+    <h1>Client positions</h1>
+    <form method="get" th:action="@{/clients}" class="inline">
+        <input name="clientId" placeholder="Client ID, e.g. CL00042" th:value="${clientId}" required>
+        <button type="submit">Look up</button>
+    </form>
+
+    <th:block th:if="${clientId}">
+        <h2 th:text="'Settled positions for ' + ${clientId}"></h2>
+        <table class="grid narrow">
+            <thead><tr><th>ISIN</th><th class="num">Net quantity</th><th class="num">Trades</th></tr></thead>
+            <tbody>
+            <tr th:each="p : ${positions}">
+                <td th:text="${p.isin}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(p.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
+                <td class="num" th:text="${p.tradeCount}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(positions)}"><td colspan="3" class="empty">No settled positions</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Latest trades</h2>
+        <table th:replace="~{fragments :: trades(${trades})}"></table>
+    </th:block>
+</main>
+</body>
+</html>

@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: settlewatch
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/settlewatch}
+    username: ${DB_USER:settlewatch}
+    password: ${DB_PASSWORD:settlewatch}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      pool-name: settlewatch-pool
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.batch_size: 100
+        order_updates: true
+  flyway:
+    enabled: true
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+settlewatch:
+  settlement:
+    # How often the settlement engine sweeps PENDING trades that are due
+    sweep-interval-ms: ${SETTLEMENT_SWEEP_MS:10000}
+    batch-size: ${SETTLEMENT_BATCH_SIZE:500}
+    # Baseline probability that a due trade fails settlement (simulated market reality)
+    failure-rate: ${SETTLEMENT_FAILURE_RATE:0.03}
+    settlement-cycle-days: 1   # T+1 (US markets since May 2024)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: settlewatch
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,250ms,500ms,1s,2s
+
+logging:
+  file:
+    name: ${LOG_FILE:logs/settlewatch.log}
+  level:
+    com.settlewatch: INFO
+  pattern:
+    file: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n"

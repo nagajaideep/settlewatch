@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Dashboard')}"></head>
+<body>
+<div th:replace="~{fragments :: nav}"></div>
+<main>
+    <h1>Settlement dashboard</h1>
+    <section class="tiles">
+        <div class="tile"><span class="label">Total trades</span>
+            <span class="value" th:text="${#numbers.formatInteger(summary.total(), 1, 'COMMA')}"></span></div>
+        <div class="tile"><span class="label">Pending</span>
+            <span class="value" th:text="${#numbers.formatInteger(summary.pending, 1, 'COMMA')}"></span></div>
+        <div class="tile"><span class="label">Due now</span>
+            <span class="value" th:text="${#numbers.formatInteger(summary.dueNow, 1, 'COMMA')}"></span></div>
+        <div class="tile"><span class="label">Settled</span>
+            <span class="value" th:text="${#numbers.formatInteger(summary.settled, 1, 'COMMA')}"></span></div>
+        <div class="tile warn"><span class="label">Failed</span>
+            <span class="value" th:text="${#numbers.formatInteger(summary.failed, 1, 'COMMA')}"></span></div>
+        <div class="tile"><span class="label">Fail rate</span>
+            <span class="value" th:text="${#numbers.formatDecimal(summary.failRatePercent(), 1, 2)} + '%'"></span></div>
+    </section>
+
+    <h2>Fails in the last 24h by reason</h2>
+    <table class="grid narrow">
+        <thead><tr><th>Reason</th><th class="num">Count</th></tr></thead>
+        <tbody>
+        <tr th:each="e : ${summary.failuresByReasonLast24h}">
+            <td th:text="${e.key}"></td><td class="num" th:text="${e.value}"></td>
+        </tr>
+        <tr th:if="${#maps.isEmpty(summary.failuresByReasonLast24h)}"><td colspan="2" class="empty">No fails</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Recent failed settlements</h2>
+    <table class="grid">
+        <thead>
+        <tr><th>Ref</th><th>Client</th><th>ISIN</th><th>Settle date</th><th>Reason</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${failed}">
+            <td th:text="${t.tradeRef}"></td>
+            <td><a th:href="@{/clients(clientId=${t.clientId})}" th:text="${t.clientId}"></a></td>
+            <td th:text="${t.isin}"></td>
+            <td th:text="${t.settlementDate}"></td>
+            <td th:text="${t.failureReason}"></td>
+            <td>
+                <form method="post" th:action="@{/trades/retry}">
+                    <input type="hidden" name="tradeRef" th:value="${t.tradeRef}">
+                    <button type="submit" class="small">Retry</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(failed)}"><td colspan="6" class="empty">No failed trades</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Recently updated pending trades</h2>
+    <table th:replace="~{fragments :: trades(${pending})}"></table>
+</main>
+</body>
+</html>
