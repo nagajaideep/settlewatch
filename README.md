@@ -185,8 +185,8 @@ smoke-tests `/actuator/health`. Rolling back means redeploying an older commit S
 
 - **Free, no credit card:** app on Render + Postgres on Neon, see [docs/deploy-free.md](docs/deploy-free.md).
   Pushes to `main` redeploy automatically.
-- **Full stack on a VM** (Prometheus, Grafana, SRE bot): Oracle Cloud Always Free, see [docs/deploy-oracle.md](docs/deploy-oracle.md)
-- AWS EC2: [docs/deploy-aws.md](docs/deploy-aws.md)
+- **Full stack on one VM** (Prometheus, Grafana, SRE bot): AWS EC2 on new-account free credits, see [docs/deploy-aws.md](docs/deploy-aws.md),
+  or Oracle Cloud Always Free, see [docs/deploy-oracle.md](docs/deploy-oracle.md)
 
 ## Repository layout
 
